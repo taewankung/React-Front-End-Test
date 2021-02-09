@@ -8,7 +8,7 @@ import {
   Space,
   Typography,
 } from "antd";
-import React, { useState, useEffect} from 'react';
+import React, { useState, useEffect, useReducer} from 'react';
 import styled from "styled-components";
 
 const Container = styled.div`
@@ -22,10 +22,15 @@ const Container = styled.div`
 `;
 const SubTask = (props)=>{
     const [subTaskName, setSubTaskName] = useState("");
-    const [setlenSubtask] = useState(props.data.task.length);
+    const [lenSubTask, setlenSubtask] = useState(props.data.task.length);
+    const [click, setClick] = useState(0);
+    // useEffect(() => {
+    //     console.log("??");
+    // });
+
     // const [subTask, setSubTask] = useState([])
     console.log(props.data)
-    console.log(props.data.task.length)
+    // console.log(props.data.task.length)
 
     // const subtaskData = props.data.task
     return (<Space direction="vertical" style={{ width: "100%" }}>
@@ -40,10 +45,19 @@ const SubTask = (props)=>{
                 <Divider />
         {props.data.task.map((subtask, subTaskIndex)=>(<Row>
             <Col span={16}>
-                <Typography.Text>{subtask.name}</Typography.Text>
+
+                {subtask.isDone ? <Typography.Text style={{ textDecoration: "line-through" }}>
+                  {subtask.name}
+                </Typography.Text>
+                :
+                <Typography.Text>{subtask.name}</Typography.Text>}
               </Col>
               <Col span={8}>
-                <Button type="primary">Done</Button>{" "}
+                <Button type="primary" onClick={()=>{
+                    props.onSubTaskDone(props.index, subTaskIndex);
+                    setClick(click+1);
+                    props.onUpdate(click+1);
+                }}>{subtask.isDone? "Undo": "Done"}</Button>{" "}
                 <Button type="danger" onClick={()=>{
                     props.onDeleteSubTask(props.index, subTaskIndex);
                     setlenSubtask(props.data.task.length);
@@ -56,11 +70,19 @@ const SubTask = (props)=>{
 const Task = (props)=>{
     // console.log(props);
     const taskData = props.data;
+
     return (
         <React.Fragment>
         {taskData.map((data, index) => (<Space direction="vertical" style={{ marginTop: 24 }}>
                 <Card
-                    title={data.name}
+                    title={
+                        data.isAllDone ? <Typography.Text style={{ textDecoration: "line-through" }}>
+                                {data.name}
+                        </Typography.Text>
+                            :
+                            <Typography.Text>
+                                {data.name}
+                            </Typography.Text>}
                     style={{ width: 600 }}
                     extra={
                         <React.Fragment>
@@ -71,7 +93,7 @@ const Task = (props)=>{
                         </React.Fragment>
                     }
                 >
-                    <SubTask index={index} data={data} onAddSubTask={props.onAddSubTask} onDeleteSubTask={props.onDeleteSubTask}/>
+                    <SubTask index={index} data={data} onAddSubTask={props.onAddSubTask} onDeleteSubTask={props.onDeleteSubTask} onSubTaskDone={props.onSubTaskDone} onUpdate={props.onUpdate}/>
                 </Card>
             </Space>))}
         </React.Fragment>
@@ -105,6 +127,7 @@ function App() {
   const [len, setlen] =  useState(0); // forReRender not good practice i think.
   // const [subtaskLen, setSubtaskLen] = useState(0);
   const [taskName, setTaskname] =  useState("");
+  const [click, setClick] = useState(0);
   console.log(taskName)
   // useEffect(() => {
   //   // Update the document title using the browser API
@@ -157,6 +180,21 @@ function App() {
       setData(dataState);
       // setS
     };
+  const doneSubTask = (index, indexSubTask) => {
+      dataState[index].task[indexSubTask].isDone = !dataState[index].task[indexSubTask].isDone;
+
+      let allDone = true;
+      for(let subtaskData of dataState[index].task){
+          if(!subtaskData.isDone) {
+              allDone = false;
+          }
+          console.log(subtaskData.isDone);
+      }
+      // let allDone = dataState[index].task.reduce((x,y)=>(x&&y))
+      dataState[index].isAllDone = allDone;
+      console.log(dataState[index]);
+      setData(dataState);
+  }
   // const data = exampleModel["data"];
   console.log(dataState)
   return (
@@ -165,7 +203,7 @@ function App() {
         <Input style={{ width: 400 }} value={taskName} onChange={(event)=>{setTaskname(event.target.value)}} placeholder="Enter Task Name" />
         <Button type="primary" onClick={createTask}> Create Task</Button>
       </Space>
-    <Task data={dataState} onDelete={deleteTask} onDuplicate={duplicate} onAddSubTask={addSubTask} onDeleteSubTask={removeSubTask}/>
+    <Task data={dataState} onDelete={deleteTask} onDuplicate={duplicate} onAddSubTask={addSubTask} onDeleteSubTask={removeSubTask} onSubTaskDone={doneSubTask} onUpdate={setClick}/>
     </Container>
   );
 }
